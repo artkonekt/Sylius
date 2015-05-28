@@ -73,6 +73,8 @@ sylius_product:
                 form:
                     default: Sylius\Bundle\CoreBundle\Form\Type\ProductTranslationType
         association_type: ~
+    product_association:
+            classes: { product: Sylius\Component\Product\Model\ProductAssociation }
 
 sylius_archetype:
     classes:
@@ -322,6 +324,13 @@ sylius_rbac:
         sylius.product_variant.update: Edit product variant
         sylius.product_variant.delete: Delete product variant
 
+        sylius.manage.association_type: Manage product associations
+        sylius.association_type.show: Show product associations
+        sylius.association_type.index: List product associations
+        sylius.association_type.create: Create product associations
+        sylius.association_type.update: Edit product associations
+        sylius.association_type.delete: Delete product associations
+
         sylius.manage.taxonomy: Manage taxonomies
         sylius.taxonomy.show: Show taxonomy
         sylius.taxonomy.index: List taxonomies
@@ -570,6 +579,7 @@ sylius_rbac:
         sylius.manage.product_option: [sylius.product_option.show, sylius.product_option.index, sylius.product_option.create, sylius.product_option.update, sylius.product_option.delete]
         sylius.manage.product_archetype: [sylius.product_archetype.show, sylius.product_archetype.index, sylius.product_archetype.create, sylius.product_archetype.update, sylius.product_archetype.delete]
         sylius.manage.product_variant: [sylius.product_variant.show, sylius.product_variant.index, sylius.product_variant.create, sylius.product_variant.update, sylius.product_variant.delete]
+        sylius.manage.association_type: [sylius.association_type.show, sylius.association_type.index, sylius.association_type.create, sylius.association_type.update, sylius.association_type.delete]
         sylius.manage.taxonomy: [sylius.taxonomy.show, sylius.taxonomy.index, sylius.taxonomy.create, sylius.taxonomy.update, sylius.taxonomy.delete]
         sylius.manage.taxon: [sylius.taxon.show, sylius.taxon.index, sylius.taxon.create, sylius.taxon.update, sylius.taxon.delete]
         sylius.manage.order: [sylius.order.show, sylius.order.index, sylius.order.create, sylius.order.update, sylius.order.delete]
@@ -602,7 +612,7 @@ sylius_rbac:
         sylius.manage.contact_topic: [sylius.contact_topic.show, sylius.contact_topic.index, sylius.contact_topic.create, sylius.contact_topic.update, sylius.contact_topic.delete]
         sylius.manage.settings: [sylius.settings.general, sylius.settings.security, sylius.settings.taxation]
 
-        sylius.catalog: [sylius.manage.product, sylius.manage.product_attribute, sylius.manage.product_option, sylius.manage.product_archetype, sylius.manage.product_variant, sylius.manage.taxonomy, sylius.manage.taxon]
+        sylius.catalog: [sylius.manage.product, sylius.manage.product_attribute, sylius.manage.product_option, sylius.manage.product_archetype, sylius.manage.product_variant, sylius.manage.association_type, sylius.manage.taxonomy, sylius.manage.taxon]
         sylius.sales: [sylius.manage.order, sylius.manage.payment, sylius.manage.report]
         sylius.marketing: [sylius.manage.promotion, sylius.manage.promotion_coupon, sylius.manage.email]
         sylius.shipping: [sylius.manage.shipment, sylius.manage.shipping_method, sylius.manage.shipping_category]
