@@ -51,7 +51,7 @@ class AssociationTypeType extends AbstractResourceType
     {
         parent::setDefaultOptions($resolver);
 
-        $resolver->replaceDefaults(array(
+        $resolver->setDefaults(array(
             'empty_data' => function (FormInterface $form) {
                 return new $this->dataClass($form->get('name')->getData());
             }
