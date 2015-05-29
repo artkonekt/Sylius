@@ -193,7 +193,7 @@ class ProductController extends BaseProductController
                 'id'            => $product->getMasterVariant()->getId(),
                 'product_id'    => $product->getId(),
                 'name'          => $product->getName(),
-                'image'         => $product->getImage()->getPath(),
+                'image'         => $product->getImage() ? $product->getImage()->getPath() : '',
                 'price'         => $helper->convertAndFormatAmount($product->getMasterVariant()->getPrice()),
                 'raw_price'     => $helper->convertAndFormatAmount($product->getMasterVariant()->getPrice(), null, true),
                 'desc'          => $product->getShortDescription(),
