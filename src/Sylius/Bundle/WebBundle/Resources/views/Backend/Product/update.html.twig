@@ -3,13 +3,66 @@
 {% from 'SyliusResourceBundle:Macros:actions.html.twig' import update %}
 
 {% block javascripts %}
-{{ parent() }}
-{% javascripts output='assets/compiled/backend_product.js'
+    {{ parent() }}
+    {% javascripts output='assets/compiled/backend_product.js'
     'bundles/syliusshipping/js/prototype-handler.js'
     'bundles/syliusweb/js/dynamic-property-types.js'
-%}
+    %}
     <script type="text/javascript" src="{{ asset_url }}"></script>
-{% endjavascripts %}
+    {% endjavascripts %}
+    <script>
+        function format(product) {
+            return '<img src="/media/cache/sylius_small/'+product.image+'" alt="" class="imgmedia-object" /><h3>'+product.name+' ('+product.price+')</h3><p>'+product.desc+'</p><hr>';
+        }
+
+        $(document).ready(function () {
+            $(".select2").select2({
+                minimumInputLength: 3,
+                ajax: {
+                    url: "{{ url('sylius_backend_product_find') }}",
+                    dataType: 'json',
+                    data: function (term, page) {
+                        return {
+                            criteria: {
+                                name: term
+                            }
+                        };
+                    },
+                    results: function (data, page) {
+                        return {
+                            results: data
+                        };
+                    }
+                },
+                formatResult: format,
+                escapeMarkup: function (m) {
+                    return m;
+                }
+            }).on("select2-selecting", function(e) {
+                var number = $('.sylius-assortment-product-associations-item').length;
+                if (number == 0) {
+                    $('#sylius-assortment-product-associations').empty();
+                }
+
+                $('#sylius-assortment-product-associations').append(
+                        '<tr class="sylius-assortment-product-associations-item">'
+                        +'<td style="vertical-align: middle">'
+                        +'<a href="#" class="btn btn-default" data-collection-button="delete" data-collection="sylius-assortment-product-associations" data-collection-item="item">'
+                        +'<span class="glyphicon glyphicon-trash"></span>'
+                        +'</a>'
+                        +'</td>'
+                        +'<td class="picture text-center">'
+                        +'<img src="/media/cache/sylius_small/'+e.choice.image+'" alt="" class="imgmedia-object" />'
+                        +'</td>'
+                        +'<td class="info">'
+                        +'<a><h4 class="name">' + e.choice.name + '</h4></a><input type="hidden" name="sylius_product[associations][' + number + '][associatedObject]" readonly="readonly" class=" form-control" value="' + e.choice.product_id + '">'
+                        +'</td>'
+                        +'<td><select name="sylius_product[associations][' + number + '][type]" class=" form-control"><option value="1" selected="selected">cross-sell</option></select></td>'
+                        +'</tr>'
+                );
+            })
+        });
+    </script>
 {% endblock %}
 
 {% block topbar %}

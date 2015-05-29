@@ -20,6 +20,7 @@ use Symfony\Component\OptionsResolver\OptionsResolverInterface;
  * Association form type.
  *
  * @author Leszek Prabucki <leszek.prabucki@gmail.com>
+ * @author Lajos Fazakas <lajos@artkonekt.com>
  */
 class ProductAssociationType extends AbstractResourceType
 {
@@ -33,11 +34,7 @@ class ProductAssociationType extends AbstractResourceType
                 'label' => 'sylius.form.association.type',
                 'required' => true
             ))
-            ->add('product', 'sylius_product_choice', array(
-                'label' => 'sylius.form.association.product',
-                'required' => true,
-                'property_path' => 'associatedObject'
-            ))
+            ->add('associatedObject', 'sylius_product_selector')
         ;
     }
 
@@ -58,7 +55,7 @@ class ProductAssociationType extends AbstractResourceType
 
         $resolver->setDefaults(array(
             'empty_data' => function (FormInterface $form) {
-                return new $this->dataClass($form->get('product')->getData(), $form->get('type')->getData());
+                return new $this->dataClass($form->get('associatedObject')->getData(), $form->get('type')->getData());
             }
         ));
     }
