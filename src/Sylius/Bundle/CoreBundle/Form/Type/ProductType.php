@@ -54,6 +54,9 @@ class ProductType extends BaseProductType
                 'empty_value' => '---',
                 'label'       => 'sylius.form.product.restricted_zone',
             ))
+            ->add('newProductAssociation', 'text', array(
+                'mapped'  => false,
+            ))
         ;
     }
 }
