@@ -190,6 +190,7 @@ sylius_search:
                 id: ~
                 name: ~
                 description: ~
+                sku: ~
 
     custom_accessors:
         - Sylius\Component\Product\Accessor\ProductAccessor
