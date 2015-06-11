@@ -22,6 +22,10 @@
             <gedmo:versioned />
         </field>
 
+        <field name="slug" column="slug" type="string" unique="true">
+            <gedmo:slug fields="name" unique="true" />
+        </field>
+
         <gedmo:loggable />
     </mapped-superclass>
 
