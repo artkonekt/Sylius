@@ -24,7 +24,7 @@ class LoadCurrencyData extends DataFixture
     protected $currencies = array(
         'EUR' => 1.00,
         'USD' => 1.30,
-        'GBP' => 0.85
+        'GBP' => 0.85,
     );
 
     /**
@@ -40,6 +40,8 @@ class LoadCurrencyData extends DataFixture
             $currency->setCode($code);
             $currency->setExchangeRate($rate);
             $currency->setEnabled(true);
+
+            $this->setReference('Sylius.Currency.'.$code, $currency);
 
             $manager->persist($currency);
         }

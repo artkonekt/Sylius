@@ -118,7 +118,7 @@ class Product extends AbstractTranslatable implements ProductInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @return null|ArchetypeInterface
      */
     public function getArchetype()
     {
@@ -126,7 +126,7 @@ class Product extends AbstractTranslatable implements ProductInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @param null|ArchetypeInterface $archetype
      */
     public function setArchetype(BaseArchetypeInterface $archetype = null)
     {
@@ -594,18 +594,5 @@ class Product extends AbstractTranslatable implements ProductInterface
         }
 
         return $this;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getTranslationClass()
-    {
-        return get_class().'Translation';
-    }
-
-    public function __toString()
-    {
-        return $this->getName();
     }
 }

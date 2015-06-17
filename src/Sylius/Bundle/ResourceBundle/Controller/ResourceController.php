@@ -182,7 +182,7 @@ class ResourceController extends FOSRestController
         $form = $this->getForm($resource);
 
         if ($request->isMethod('POST') && $form->submit($request)->isValid()) {
-            $resource = $this->domainManager->create($resource);
+            $resource = $this->domainManager->create($form->getData());
 
             if ($this->config->isApiRequest()) {
                 if ($resource instanceof ResourceEvent) {
@@ -438,7 +438,6 @@ class ResourceController extends FOSRestController
                 )
             );
         }
-
         return $resource;
     }
 
@@ -501,8 +500,12 @@ class ResourceController extends FOSRestController
 
         $permission = $this->config->getPermission($permission);
 
-        if ($permission && !$this->get('sylius.authorization_checker')->isGranted(sprintf('%s.%s.%s', $this->config->getBundlePrefix(), $this->config->getResourceName(), $permission))) {
-            throw new AccessDeniedException();
+        if ($permission) {
+            $grant = sprintf('%s.%s.%s', $this->config->getBundlePrefix(), $this->config->getResourceName(), $permission);
+
+            if (!$this->get('sylius.authorization_checker')->isGranted($grant)) {
+                throw new AccessDeniedException(sprintf('Access denied to "%s" for "%s".', $grant, $this->getUser() ? $this->getUser()->getUsername() : 'anon.'));
+            }
         }
     }
 }

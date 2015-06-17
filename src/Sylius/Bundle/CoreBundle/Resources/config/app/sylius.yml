@@ -4,7 +4,7 @@ sylius_core:
             field: slug
             prefix: /p
             defaults:
-                controller: sylius.controller.product:showAction
+                controller: sylius.controller.product:detailsAction
                 repository: sylius.repository.product
                 sylius:
                     template: SyliusWebBundle:Frontend/Product:show.html.twig
@@ -35,6 +35,13 @@ sylius_api:
         api_user:
             model: %sylius.model.user.class%
 
+sylius_channel:
+    classes:
+        channel:
+            model: Sylius\Component\Core\Model\Channel
+            form:
+              default: Sylius\Bundle\CoreBundle\Form\Type\ChannelType
+
 sylius_cart:
     resolver: sylius.cart_item_resolver.default
     classes:
@@ -55,10 +62,12 @@ sylius_taxonomy:
     classes:
         taxonomy:
             model: Sylius\Component\Core\Model\Taxonomy
-            form: Sylius\Bundle\CoreBundle\Form\Type\TaxonomyType
+            form:
+                default: Sylius\Bundle\CoreBundle\Form\Type\TaxonomyType
         taxon:
             model: Sylius\Component\Core\Model\Taxon
-            form: Sylius\Bundle\CoreBundle\Form\Type\TaxonType
+            form:
+                default: Sylius\Bundle\CoreBundle\Form\Type\TaxonType
 
 sylius_product:
     classes:
@@ -95,13 +104,15 @@ sylius_variation:
             variant:
                 model: Sylius\Component\Core\Model\ProductVariant
                 repository: Sylius\Bundle\CoreBundle\Doctrine\ORM\ProductVariantRepository
-                form: Sylius\Bundle\CoreBundle\Form\Type\ProductVariantType
+                form:
+                    default: Sylius\Bundle\CoreBundle\Form\Type\ProductVariantType
 
 sylius_taxation:
     classes:
         tax_rate:
             model: Sylius\Component\Core\Model\TaxRate
-            form: Sylius\Bundle\CoreBundle\Form\Type\TaxRateType
+            form:
+                default: Sylius\Bundle\CoreBundle\Form\Type\TaxRateType
 
 sylius_shipping:
     classes:
@@ -112,10 +123,15 @@ sylius_shipping:
             model: Sylius\Component\Core\Model\InventoryUnit
         shipping_method:
             model: Sylius\Component\Core\Model\ShippingMethod
-            form: Sylius\Bundle\CoreBundle\Form\Type\ShippingMethodType
+            form:
+                default: Sylius\Bundle\CoreBundle\Form\Type\ShippingMethodType
 
 sylius_promotion:
     classes:
+        promotion:
+            model: Sylius\Component\Core\Model\Promotion
+            repository: Sylius\Bundle\CoreBundle\Doctrine\ORM\PromotionRepository
+            form: Sylius\Bundle\CoreBundle\Form\Type\PromotionType
         promotion_subject:
             model: %sylius.model.order.class%
         promotion_coupon:
@@ -136,6 +152,11 @@ sylius_payment:
         payment:
             model: Sylius\Component\Core\Model\Payment
             controller: Sylius\Bundle\CoreBundle\Controller\PaymentController
+            repository: Sylius\Bundle\CoreBundle\Doctrine\ORM\PaymentRepository
+        payment_method:
+            repository: Sylius\Bundle\CoreBundle\Doctrine\ORM\PaymentMethodRepository
+            form:
+                choice: Sylius\Bundle\CoreBundle\Form\Type\Payment\PaymentMethodChoiceType
     gateways:
         dummy: Test
         offline: Offline
@@ -162,10 +183,12 @@ sylius_order:
             model: Sylius\Component\Core\Model\Order
             controller: Sylius\Bundle\CoreBundle\Controller\OrderController
             repository: Sylius\Bundle\CoreBundle\Doctrine\ORM\OrderRepository
-            form: Sylius\Bundle\CoreBundle\Form\Type\OrderType
+            form:
+                default: Sylius\Bundle\CoreBundle\Form\Type\OrderType
         order_item:
             model: Sylius\Component\Core\Model\OrderItem
-            form: Sylius\Bundle\CoreBundle\Form\Type\OrderItemType
+            form:
+                default: Sylius\Bundle\CoreBundle\Form\Type\OrderItemType
 
 sylius_sequence:
     generators:
@@ -236,6 +259,7 @@ sylius_mailer:
         sylius.email.order_comment.name: SyliusWebBundle:Email:orderComment.html.twig
         sylius.email.shipment_confirmation.name: SyliusWebBundle:Email:shipmentConfirmation.html.twig
         sylius.email.user_confirmation.name: SyliusWebBundle:Email:userConfirmation.html.twig
+        sylius.email.password_reset.name: SyliusWebBundle:Email:passwordReset.html.twig
     sender:
         name: Example.com
         address: no-reply@example.com
@@ -252,6 +276,15 @@ sylius_mailer:
         user_confirmation:
             subject: sylius.emails.user_confirmation.subject
             template: SyliusWebBundle:Email:userConfirmation.html.twig
+        password_reset:
+            subject: sylius.emails.user.password_reset.subject
+            template: SyliusWebBundle:Email:passwordReset.html.twig
+        reset_password_token:
+            subject: sylius.emails.user.password_reset.subject
+            template: SyliusWebBundle:Email:passwordReset.html.twig
+        reset_password_pin:
+            subject: sylius.emails.user.password_reset.subject
+            template: SyliusWebBundle:Email:passwordReset.html.twig
 
 sylius_rbac:
     classes:
@@ -262,12 +295,12 @@ sylius_rbac:
             form:
                 choice: Sylius\Bundle\RbacBundle\Form\Type\PermissionEntityType
     permissions:
-        sylius.manage.user: Manage users
-        sylius.user.show: Show user
-        sylius.user.index: List users
-        sylius.user.create: Create user
-        sylius.user.update: Edit user
-        sylius.user.delete: Delete user
+        sylius.manage.customer: Manage customers
+        sylius.customer.show: Show customer
+        sylius.customer.index: List customers
+        sylius.customer.create: Create customer
+        sylius.customer.update: Edit customer
+        sylius.customer.delete: Delete customer
 
         sylius.manage.group: Manage groups
         sylius.group.show: Show group
@@ -275,6 +308,13 @@ sylius_rbac:
         sylius.group.create: Create group
         sylius.group.update: Edit group
         sylius.group.delete: Delete group
+
+        sylius.manage.channel: Manage channels
+        sylius.channel.show: Show channel
+        sylius.channel.index: List channels
+        sylius.channel.create: Create channel
+        sylius.channel.update: Edit channel
+        sylius.channel.delete: Delete channel
 
         sylius.manage.role: Manage roles
         sylius.role.show: Show role
@@ -571,7 +611,8 @@ sylius_rbac:
         sylius.taxes: Manage taxes
         sylius.support: Manage customer support
     permissions_hierarchy:
-        sylius.manage.user: [sylius.user.show, sylius.user.index, sylius.user.create, sylius.user.update, sylius.user.delete]
+        sylius.manage.channel: [sylius.channel.show, sylius.channel.index, sylius.channel.create, sylius.channel.update, sylius.channel.delete]
+        sylius.manage.customer: [sylius.customer.show, sylius.customer.index, sylius.customer.create, sylius.customer.update, sylius.customer.delete]
         sylius.manage.group: [sylius.group.show, sylius.group.index, sylius.group.create, sylius.group.update, sylius.group.delete]
         sylius.manage.role: [sylius.role.show, sylius.role.index, sylius.role.create, sylius.role.update, sylius.role.delete]
         sylius.manage.permission: [sylius.permission.show, sylius.permission.index, sylius.permission.create, sylius.permission.update, sylius.permission.delete]
@@ -618,8 +659,8 @@ sylius_rbac:
         sylius.marketing: [sylius.manage.promotion, sylius.manage.promotion_coupon, sylius.manage.email]
         sylius.shipping: [sylius.manage.shipment, sylius.manage.shipping_method, sylius.manage.shipping_category]
         sylius.content: [sylius.manage.static_content, sylius.manage.route, sylius.manage.simple_block, sylius.manage.menu, sylius.manage.slideshow, sylius.manage.string_block, sylius.manage.slideshow_block, sylius.manage.imagine_block]
-        sylius.security: [sylius.manage.permission, sylius.manage.role, sylius.manage.user, sylius.manage.group, sylius.accounts]
-        sylius.accounts: [sylius.manage.user, sylius.manage.group]
+        sylius.security: [sylius.manage.permission, sylius.manage.role, sylius.manage.customer, sylius.manage.group, sylius.accounts]
+        sylius.accounts: [sylius.manage.customer, sylius.manage.group]
         sylius.taxes: [sylius.manage.tax_rate, sylius.manage.tax_category]
         sylius.support: [sylius.manage.contact_request, sylius.manage.contact_topic]
     security_roles:
@@ -630,7 +671,7 @@ sylius_rbac:
         administrator:
             name: Administrator
             description: Administrator user
-            permissions: [sylius.manage.settings, sylius.manage.locale, sylius.manage.currency, sylius.manage.country, sylius.manage.province, sylius.manage.zone, sylius.manage.payment_method]
+            permissions: [sylius.manage.settings, sylius.manage.locale, sylius.manage.currency, sylius.manage.country, sylius.manage.province, sylius.manage.zone, sylius.manage.payment_method, sylius.manage.channel]
             security_roles: [ROLE_ADMINISTRATION_ACCESS]
         catalog_manager:
             name: Catalog Manager
@@ -679,14 +720,23 @@ sylius_rbac:
         developer:
             name: Developer
             description: Developers Access
-            permissions: [sylius.user.index, sylius.user.show, sylius.manage.api_client]
+            permissions: [sylius.customer.index, sylius.customer.show, sylius.manage.api_client]
             security_roles: [ROLE_ADMINISTRATION_ACCESS]
         support:
             name: Support
             description: Support Team
-            permissions: [sylius.support, sylius.user.show, sylius.user.index]
+            permissions: [sylius.support, sylius.customer.show, sylius.customer.index]
             security_roles: [ROLE_ADMINISTRATION_ACCESS]
     roles_hierarchy:
         administrator: [catalog_manager, sales_manager, marketing_manager, accounts_manager, shipping_manager, content_editor, tax_manager, it, support]
         it: [security_auditor, developer]
 
+sylius_user:
+    classes:
+        user:
+            model: Sylius\Component\Core\Model\User
+            form:
+                default: Sylius\Bundle\CoreBundle\Form\Type\UserType
+        customer:
+            model: Sylius\Component\Core\Model\Customer
+            controller: Sylius\Bundle\CoreBundle\Controller\CustomerController
