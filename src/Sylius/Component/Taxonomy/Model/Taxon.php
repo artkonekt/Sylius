@@ -80,6 +80,11 @@ class Taxon extends AbstractTranslatable implements TaxonInterface
     protected $deletedAt;
 
     /**
+     * @var int
+     */
+    private $priority;
+
+    /**
      * Constructor.
      */
     public function __construct()
@@ -365,5 +370,21 @@ class Taxon extends AbstractTranslatable implements TaxonInterface
     protected function getTranslationClass()
     {
         return get_class().'Translation';
+    }
+
+    /**
+     * @return int
+     */
+    public function getPriority()
+    {
+        return $this->priority;
+    }
+
+    /**
+     * @param int $priority
+     */
+    public function setPriority($priority)
+    {
+        $this->priority = $priority;
     }
 }
