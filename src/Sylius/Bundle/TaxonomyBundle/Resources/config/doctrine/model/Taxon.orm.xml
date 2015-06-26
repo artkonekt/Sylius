@@ -36,13 +36,17 @@
                 <cascade-all />
             </cascade>
             <order-by>
-                <order-by-field name="left" direction="ASC" />
+                <order-by-field name="priority" direction="DESC" />
             </order-by>
         </one-to-many>
 
         <order-by>
-            <order-by-field name="left" direction="ASC" />
+            <order-by-field name="priority" direction="DESC" />
         </order-by>
+
+        <field name="priority" type="integer">
+            <gedmo:sortable-position/>
+        </field>
 
         <field name="left" column="tree_left" type="integer">
             <gedmo:tree-left />
