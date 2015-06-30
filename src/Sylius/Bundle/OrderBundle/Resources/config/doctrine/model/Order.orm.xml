@@ -25,7 +25,10 @@
         <field name="number" column="number" type="string" unique="true" nullable="true" />
         <field type="string" name="email" column="email" nullable="true"/>
 
-        <field name="state" column="state" type="string" />
+        <field name="state" column="state" type="string">
+            <gedmo:versioned />
+        </field>
+
         <field name="completedAt" column="completed_at" type="datetime" nullable="true" />
 
         <one-to-many field="items" target-entity="Sylius\Component\Order\Model\OrderItemInterface" mapped-by="order" orphan-removal="true">
