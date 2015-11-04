@@ -55,6 +55,9 @@
         </field>
 
         <one-to-many field="images" target-entity="Sylius\Component\Core\Model\ProductVariantImageInterface" mapped-by="variant">
+            <order-by>
+                <order-by-field name="displayOrder" direction="ASC"/>
+            </order-by>
             <cascade>
                 <cascade-all />
             </cascade>

@@ -21,6 +21,13 @@ class ProductVariantImage extends Image implements ProductVariantImageInterface
     protected $variant;
 
     /**
+     * The display order of image.
+     *
+     * @var int
+     */
+    protected $displayOrder;
+
+    /**
      * {@inheritdoc}
      */
     public function getVariant()
@@ -34,6 +41,25 @@ class ProductVariantImage extends Image implements ProductVariantImageInterface
     public function setVariant(ProductVariantInterface $variant = null)
     {
         $this->variant = $variant;
+
+        return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getDisplayOrder()
+    {
+        return $this->displayOrder;
+    }
+
+    /**
+     * @param int $displayOrder
+     * @return ProductVariantImage
+     */
+    public function setDisplayOrder($displayOrder)
+    {
+        $this->displayOrder = (int)$displayOrder;
 
         return $this;
     }

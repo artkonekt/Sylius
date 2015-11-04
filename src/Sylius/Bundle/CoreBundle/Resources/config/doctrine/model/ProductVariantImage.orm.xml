@@ -18,6 +18,7 @@
 
     <mapped-superclass name="Sylius\Component\Core\Model\ProductVariantImage" table="sylius_product_variant_image">
         <many-to-one field="variant" target-entity="Sylius\Component\Product\Model\VariantInterface" inversed-by="images" />
+        <field name="displayOrder" column="display_order" type="integer" nullable="true"/>
     </mapped-superclass>
 
 </doctrine-mapping>

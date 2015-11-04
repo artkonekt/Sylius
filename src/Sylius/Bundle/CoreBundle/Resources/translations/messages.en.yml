@@ -28,6 +28,7 @@ sylius:
             roles: Roles
         image:
             file: Image
+            display_order: Display order
         locale:
             code: Code
             enabled: Enabled

@@ -2,14 +2,17 @@
 
 {% macro imagePrototype() %}
 <div class="sylius-assortment-product-images-image row" id="sylius_product_masterVariant_images___name__">
-    <div class="col-md-1">
+    <div class="col-md-3">
         <span class="thumbnail"></span>
     </div>
-    <div class="col-md-9">
+    <div class="col-md-3">
         <span class="btn-primary btn-lg file-overlay"><i class="glyphicon glyphicon-folder-open"></i> {{ 'sylius.form.choose_file'|trans }}</span>
         <input type="file" class="form-control" required="required" name="sylius_product[masterVariant][images][__name__][file]" id="sylius_product_masterVariant_images___name___file">
     </div>
-    <div class="col-md-2">
+    <div class="col-md-3">
+        <input type="text" class="form-control" name="sylius_product[masterVariant][images][__name__][displayOrder]" id="sylius_product_masterVariant_images___name___displayOrder">
+    </div>
+    <div class="col-md-3">
         <a href="#" class="btn btn-danger" data-collection-button="delete" data-collection="sylius-assortment-product-images" data-collection-item="image"><i class="glyphicon glyphicon-trash"></i>&nbsp;{{ 'sylius.variant.delete_image'|trans }}</a>
     </div>
 </div>
@@ -19,17 +22,20 @@
     <div id="sylius-assortment-product-images" data-toggle="modal-gallery" data-target="#modal-gallery" class="collection-container" data-prototype="{{ _self.imagePrototype()|e }}">
         {% for imageForm in form.masterVariant.images %}
         <div class="sylius-assortment-product-images-image row">
-            <div class="col-md-1">
+            <div class="col-md-3">
                 {% if imageForm.vars.value.path|length > 0 %}
                 <a href="{{ imageForm.vars.value.path|imagine_filter('sylius_large') }}" data-gallery="gallery">
                     <img class="img-rounded" src="{{ imageForm.vars.value.path|imagine_filter('sylius_small') }}" alt="" />
                 </a>
                 {% endif %}
             </div>
-            <div class="col-md-9">
+            <div class="col-md-3">
                 {{ form_widget(imageForm.file) }}
             </div>
-            <div class="col-md-2">
+            <div class="col-md-3">
+                {{ form_widget(imageForm.displayOrder) }}
+            </div>
+            <div class="col-md-3">
                 <a href="#" class="btn btn-danger" data-collection-button="delete" data-collection="sylius-assortment-product-images" data-collection-item="image"><i class="glyphicon glyphicon-trash"></i>&nbsp;{{ 'sylius.variant.delete_image'|trans }}</a>
             </div>
         </div>

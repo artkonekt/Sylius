@@ -24,6 +24,11 @@ class ImageType extends AbstractResourceType
         $builder->add('file', 'file', array(
             'label' => 'sylius.form.image.file'
         ));
+        $builder->add('displayOrder', 'number', array(
+            'attr' => array(
+                'title' => 'sylius.form.image.display_order'
+            )
+        ));
     }
 
     /**
