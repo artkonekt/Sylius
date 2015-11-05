@@ -11,11 +11,8 @@
 
 namespace Sylius\Bundle\CoreBundle\EventListener;
 
-use FOS\UserBundle\Event\FilterUserResponseEvent;
-use FOS\UserBundle\Model\UserInterface;
 use Sylius\Bundle\CoreBundle\Mailer\Emails;
-use Sylius\Component\Core\Model\OrderInterface;
-use Sylius\Component\Core\Model\ShipmentInterface;
+use Sylius\Component\Core\Model\CustomerInterface;
 use Sylius\Component\Mailer\Sender\SenderInterface;
 use Sylius\Component\Order\Model\CommentInterface;
 use Sylius\Component\Resource\Exception\UnexpectedTypeException;
@@ -33,6 +30,9 @@ class MailerListener
      */
     protected $emailSender;
 
+    /**
+     * @param SenderInterface $emailSender
+     */
     public function __construct(SenderInterface $emailSender)
     {
         $this->emailSender = $emailSender;
@@ -43,63 +43,30 @@ class MailerListener
      *
      * @throws UnexpectedTypeException
      */
-    public function sendOrderConfirmationEmail(GenericEvent $event)
+    public function sendUserConfirmationEmail(GenericEvent $event)
     {
-        $order = $event->getSubject();
+        $customer = $event->getSubject();
 
-        if (!$order instanceof OrderInterface) {
+        if (!$customer instanceof CustomerInterface) {
             throw new UnexpectedTypeException(
-                $order,
-                'Sylius\Component\Core\Model\OrderInterface'
+                $customer,
+                'Sylius\Component\Core\Model\CustomerInterface'
             );
         }
 
-        $this->emailSender->send(Emails::ORDER_CONFIRMATION, array($order->getEmail()), array('order' => $order));
-    }
-
-    /**
-     * @param GenericEvent $event
-     *
-     * @throws UnexpectedTypeException
-     */
-    public function sendShipmentConfirmationEmail(GenericEvent $event)
-    {
-        $shipment = $event->getSubject();
-
-        if (!$shipment instanceof ShipmentInterface) {
-            throw new UnexpectedTypeException(
-                $shipment,
-                'Sylius\Component\Shipping\Model\ShipmentInterface'
-            );
-        }
-        $order = $shipment->getOrder();
-        $this->emailSender->send(Emails::SHIPMENT_CONFIRMATION, array($order->getEmail()), array(
-            'shipment' => $shipment,
-            'order' => $order
-        ));
-    }
-
-    /**
-     * @param FilterUserResponseEvent $event
-     *
-     * @throws UnexpectedTypeException
-     */
-    public function sendUserConfirmationEmail(FilterUserResponseEvent $event)
-    {
-        $user = $event->getUser();
-
-        if (!$user instanceof UserInterface) {
-            throw new UnexpectedTypeException(
-                $user,
-                'Sylius\Component\Core\Model\UserInterface'
-            );
+        if (null === ($user = $customer->getUser())) {
+            return;
         }
 
         if (!$user->isEnabled()) {
             return;
         }
 
-        $this->emailSender->send(Emails::USER_CONFIRMATION, array($user->getEmail()), array('user' => $user));
+        if (null === ($email = $customer->getEmail()) || empty($email)) {
+            return;
+        }
+
+        $this->emailSender->send(Emails::USER_CONFIRMATION, array($email), array('user' => $user));
     }
 
     /**
@@ -118,14 +85,29 @@ class MailerListener
             );
         }
 
-        if ($comment->getNotifyCustomer()) {
-            $order = $comment->getOrder();
-            $email = null === $order->getUser() ? $order->getEmail() : $order->getUser()->getEmail();
-
-            $this->emailSender->send(Emails::ORDER_COMMENT, array($email), array(
-                'order'   => $order,
-                'comment' => $comment,
-            ));
+        if (!$comment->getNotifyCustomer()) {
+            return;
         }
+
+        if (null === $order = $comment->getOrder()) {
+            return;
+        }
+
+        if (null === $order->getCustomer()) {
+            return;
+        }
+
+        if (null === ($email = $order->getCustomer()->getEmail()) || empty($email)) {
+            return;
+        }
+
+        $this->emailSender->send(
+            Emails::ORDER_COMMENT,
+            array($email),
+            array(
+                'order' => $order,
+                'comment' => $comment,
+            )
+        );
     }
 }

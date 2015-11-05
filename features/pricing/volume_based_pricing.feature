@@ -5,7 +5,7 @@ Feature: Volume based pricing
     I want to configure volume based pricing
 
     Background:
-        Given there is default currency configured
+        Given store has default configuration
           And there are following taxonomies defined:
             | name     |
             | Category |
@@ -30,6 +30,7 @@ Feature: Volume based pricing
             | 10-19 | 65.00 |
             | 20-29 | 60.00 |
             | 30+   | 55.99 |
+          And all products are assigned to the default channel
 
     Scenario: Volume-based pricing has priority over price attribute
         Given I am on the store homepage

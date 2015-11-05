@@ -19,6 +19,11 @@ use Symfony\Component\Validator\ConstraintViolationList;
 
 abstract class AbstractInstallCommand extends ContainerAwareCommand
 {
+    const WEB_ASSETS_DIRECTORY      = 'web/assets/';
+    const WEB_BUNDLES_DIRECTORY     = 'web/bundles/';
+    const WEB_MEDIA_DIRECTORY       = 'web/media/';
+    const WEB_MEDIA_IMAGE_DIRECTORY = 'web/media/image/';
+
     /**
      * @var CommandExecutor
      */
@@ -137,6 +142,18 @@ abstract class AbstractInstallCommand extends ContainerAwareCommand
 
     /**
      * @param OutputInterface $output
+     * @param string          $question
+     * @param array           $constraints
+     *
+     * @return mixed
+     */
+    protected function askHidden(OutputInterface $output, $question, array $constraints = array())
+    {
+        return $this->proceedAskRequest($output, $question, $constraints, null, true);
+    }
+
+    /**
+     * @param OutputInterface $output
      * @param string $question
      * @param array $constraints
      * @param mixed $default
@@ -145,20 +162,7 @@ abstract class AbstractInstallCommand extends ContainerAwareCommand
      */
     protected function ask(OutputInterface $output, $question, array $constraints = array(), $default = null)
     {
-        $dialog = $this->getHelperSet()->get('dialog');
-
-        do {
-            $value = $dialog->ask($output, sprintf('<question>%s</question> ', $question), $default);
-            $valid = 0 === count($errors = $this->validate($value, $constraints));
-
-            if (!$valid) {
-                foreach ($errors as $error) {
-                    $output->writeln(sprintf('<error>%s</error>', $error->getMessage()));
-                }
-            }
-        } while (!$valid);
-
-        return $value;
+        return $this->proceedAskRequest($output, $question, $constraints, $default);
     }
 
     /**
@@ -181,5 +185,123 @@ abstract class AbstractInstallCommand extends ContainerAwareCommand
         foreach ($errors as $error) {
             $output->writeln(sprintf('<error>%s</error>', $error->getMessage()));
         }
+    }
+
+    /**
+     * @param OutputInterface $output
+     * @param string          $question
+     * @param array           $constraints
+     * @param string          $default
+     * @param boolean         $hidden
+     *
+     * @return mixed
+     */
+    private function proceedAskRequest(OutputInterface $output, $question, array $constraints = array(), $default = null, $hidden = false)
+    {
+        do {
+            $value = $this->getAnswerFromDialog($output, $question, $default, $hidden);
+            // do not validate value if no constraints were given
+            if (empty($constraints)) {
+                return $value;
+            }
+            $valid = 0 === count($errors = $this->validate($value, $constraints));
+
+            if (!$valid) {
+                foreach ($errors as $error) {
+                    $output->writeln(sprintf('<error>%s</error>', $error->getMessage()));
+                }
+            }
+        } while (!$valid);
+
+        return $value;
+    }
+
+    /**
+     * @param OutputInterface $output
+     * @param string $question
+     * @param string|null $default
+     * @param boolean $hidden
+     *
+     * @return string
+     */
+    private function getAnswerFromDialog(OutputInterface $output, $question, $default = null, $hidden)
+    {
+        $dialog = $this->getHelperSet()->get('dialog');
+
+        if (!$hidden) {
+            return $dialog->ask($output, sprintf('<question>%s</question> ', $question), $default);
+        }
+
+        return $dialog->askHiddenResponse($output, sprintf('<question>%s</question> ', $question));
+    }
+
+    /**
+     * @param string $directory
+     * @param OutputInterface $output
+     */
+    protected function ensureDirectoryExistsAndIsWritable($directory, OutputInterface $output)
+    {
+        $this->ensureDirectoryExists($directory, $output);
+        $this->ensureDirectoryIsWritable($directory, $output);
+    }
+
+    /**
+     * @param string $directory
+     * @param OutputInterface $output
+     */
+    private function ensureDirectoryExists($directory, OutputInterface $output)
+    {
+        if (!is_dir($directory)) {
+            if (!mkdir($directory, 0755, true)) {
+                $output->writeln($this->createUnexisitingDirectoryMessage($directory));
+
+                throw new \RuntimeException("Failed while trying to create directory.");
+            }
+
+            $output->writeln(sprintf('<comment>Created "%s" directory.</comment>', $directory));
+        }
+    }
+
+    /**
+     * @param string $directory
+     *
+     * @return string
+     */
+    protected function createUnexisitingDirectoryMessage($directory)
+    {
+        return
+            '<error>Cannot run command due to unexisting directory (tried to create it automatically, failed).</error>' . PHP_EOL .
+            sprintf('Create directory "%s" and run command "<comment>%s</comment>"', $directory, $this->getName())
+            ;
+    }
+
+    /**
+     * @param string $directory
+     * @param OutputInterface $output
+     */
+    protected function ensureDirectoryIsWritable($directory, OutputInterface $output)
+    {
+        if (!is_writable($directory)) {
+            if (!chmod($directory, 0755)) {
+                $output->writeln($this->createBadPermissionsMessage($directory));
+
+                throw new \RuntimeException("Failed while trying to change directory permissions.");
+            }
+
+            $output->writeln(sprintf('<comment>Changed "%s" permissions to 0755.</comment>', $directory));
+        }
+    }
+
+    /**
+     * @param string $directory
+     *
+     * @return string
+     */
+    protected function createBadPermissionsMessage($directory)
+    {
+        return
+            '<error>Cannot run command due to bad directory permissions (tried to change permissions to 0755).</error>' . PHP_EOL .
+            sprintf('Set directory "%s" writable and run command "<comment>%s</comment>"', $directory, $this->getName())
+            ;
     }
 }

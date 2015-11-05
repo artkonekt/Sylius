@@ -14,8 +14,8 @@ namespace Sylius\Bundle\ReportBundle\Renderer;
 use Sylius\Component\Report\DataFetcher\Data;
 use Sylius\Component\Report\Model\ReportInterface;
 use Sylius\Component\Report\Renderer\RendererInterface;
-use Symfony\Bundle\FrameworkBundle\Templating\EngineInterface;
 use Sylius\Component\Report\Renderer\DefaultRenderers;
+use Symfony\Component\Templating\EngineInterface;
 
 /**
  * @author Mateusz Zalewski <mateusz.zalewski@lakion.com>
@@ -30,13 +30,22 @@ class ChartRenderer implements RendererInterface
     const PIE_CHART        = 'pie';
     const DOUGHNUT_CHART   = 'doughnut';
 
+    /**
+     * @var EngineInterface
+     */
     private $templating;
 
+    /**
+     * @param EngineInterface $templating
+     */
     public function __construct(EngineInterface $templating)
     {
         $this->templating = $templating;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function render(ReportInterface $report, Data $data)
     {
         if (null !== $data->getData()) {
@@ -48,22 +57,28 @@ class ChartRenderer implements RendererInterface
 
             $rendererConfiguration = $report->getRendererConfiguration();
 
-            return $this->templating->renderResponse($rendererConfiguration["template"], array(
+            return $this->templating->render($rendererConfiguration["template"], array(
                 'data' => $rendererData,
-                'configuration' => $rendererConfiguration
+                'configuration' => $rendererConfiguration,
             ));
         }
 
-        return $this->templating->renderResponse("SyliusReportBundle::noDataTemplate.html.twig", array(
-            'report' => $report
+        return $this->templating->render("SyliusReportBundle::noDataTemplate.html.twig", array(
+            'report' => $report,
         ));
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function getType()
     {
         return DefaultRenderers::CHART;
     }
 
+    /**
+     * @return array
+     */
     public static function getChartTypes()
     {
         return array(

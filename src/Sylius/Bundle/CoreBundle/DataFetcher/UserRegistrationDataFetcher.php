@@ -2,7 +2,7 @@
 
 namespace Sylius\Bundle\CoreBundle\DataFetcher;
 
-use Sylius\Bundle\CoreBundle\Doctrine\ORM\UserRepository;
+use Sylius\Bundle\UserBundle\Doctrine\ORM\UserRepository;
 use Sylius\Bundle\ReportBundle\DataFetcher\TimePeriod;
 use Sylius\Component\Report\DataFetcher\DefaultDataFetchers;
 
@@ -18,6 +18,9 @@ class UserRegistrationDataFetcher extends TimePeriod
      */
     private $userRepository;
 
+    /**
+     * @param UserRepository $userRepository
+     */
     public function __construct(UserRepository $userRepository)
     {
         $this->userRepository = $userRepository;

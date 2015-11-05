@@ -51,6 +51,13 @@ EOT
 
         $output->writeln('Loading sample data...');
 
+        try {
+            $this->ensureDirectoryExistsAndIsWritable(self::WEB_MEDIA_DIRECTORY, $output);
+            $this->ensureDirectoryExistsAndIsWritable(self::WEB_MEDIA_IMAGE_DIRECTORY, $output);
+        } catch (\RuntimeException $exception) {
+            return 1;
+        }
+
         $doctrineConfiguration = $this->get('doctrine.orm.entity_manager')->getConnection()->getConfiguration();
         $logger = $doctrineConfiguration->getSQLLogger();
         $doctrineConfiguration->setSQLLogger(null);
@@ -59,7 +66,6 @@ EOT
             'doctrine:fixtures:load'       => array('--no-interaction' => true),
             'doctrine:phpcr:fixtures:load' => array('--no-interaction' => true),
             'sylius:search:index',
-            'sylius:rbac:initialize'
         );
 
         $this->runCommands($commands, $input, $output);

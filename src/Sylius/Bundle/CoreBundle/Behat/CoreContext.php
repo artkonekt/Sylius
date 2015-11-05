@@ -12,9 +12,15 @@
 namespace Sylius\Bundle\CoreBundle\Behat;
 
 use Behat\Gherkin\Node\TableNode;
+use Sylius\Component\Core\Model\ChannelInterface;
+use Sylius\Component\Currency\Model\Currency;
+use Sylius\Component\Currency\Model\CurrencyInterface;
+use Sylius\Component\Locale\Model\LocaleInterface;
+use Sylius\Component\Rbac\Model\RoleInterface;
 use Sylius\Bundle\ResourceBundle\Behat\DefaultContext;
 use Sylius\Component\Addressing\Model\AddressInterface;
 use Sylius\Component\Cart\SyliusCartEvents;
+use Sylius\Component\Core\Model\CustomerInterface;
 use Sylius\Component\Core\Model\OrderInterface;
 use Sylius\Component\Core\Model\OrderItemInterface;
 use Sylius\Component\Core\Model\PaymentInterface;
@@ -29,6 +35,7 @@ use Sylius\Component\Order\OrderTransitions;
 use Sylius\Component\Payment\Model\PaymentMethodInterface;
 use Sylius\Component\Shipping\Calculator\DefaultCalculators;
 use Sylius\Component\Shipping\ShipmentTransitions;
+use Sylius\Component\User\Model\GroupableInterface;
 use Symfony\Component\EventDispatcher\GenericEvent;
 
 class CoreContext extends DefaultContext
@@ -39,6 +46,36 @@ class CoreContext extends DefaultContext
      * @var OrderInterface[]
      */
     protected $orders = array();
+
+    /**
+     * @Given store has default configuration
+     */
+    public function storeHasDefaultConfiguration()
+    {
+        $manager = $this->getEntityManager();
+
+        /** @var CurrencyInterface $currency */
+        $currency = $this->getRepository('currency')->createNew();
+        $currency->setCode('EUR');
+        $currency->setExchangeRate(1);
+        $manager->persist($currency);
+
+        /** @var LocaleInterface $locale */
+        $locale = $this->getRepository('locale')->createNew();
+        $locale->setCode('en_US');
+        $manager->persist($locale);
+
+        /* @var ChannelInterface $channel */
+        $channel = $this->getRepository('channel')->createNew();
+        $channel->setCode('DEFAULT-WEB');
+        $channel->setName('Default');
+        $channel->setUrl('http://example.com');
+        $channel->addCurrency($currency);
+        $channel->addLocale($locale);
+        $manager->persist($channel);
+
+        $manager->flush();
+    }
 
     /**
      * @Given I am logged in as :role
@@ -62,7 +99,7 @@ class CoreContext extends DefaultContext
      */
     public function iAmNotLoggedIn()
     {
-        $this->getSession()->visit($this->generatePageUrl('fos_user_security_logout'));
+        $this->getSession()->restart();
     }
 
     /**
@@ -93,7 +130,9 @@ class CoreContext extends DefaultContext
             $order->setShippingAddress($address);
             $order->setBillingAddress($address);
 
-            $order->setUser($this->thereIsUser($data['user'], 'sylius'));
+            $customer = $this->thereIsCustomer($data['customer']);
+            $customer->addAddress($address);
+            $order->setCustomer($customer);
 
             if (isset($data['shipment']) && '' !== trim($data['shipment'])) {
                 $order->addShipment($this->createShipment($data['shipment']));
@@ -180,6 +219,25 @@ class CoreContext extends DefaultContext
     }
 
     /**
+     * @Given /^there are following customers:$/
+     * @Given /^the following customers exist:$/
+     */
+    public function thereAreFollowingCustomers(TableNode $table)
+    {
+        foreach ($table->getHash() as $data) {
+            $this->thereIsCustomer(
+                $data['email'],
+                isset($data['address']) && !empty($data['address']) ? $data['address'] : null,
+                isset($data['groups']) && !empty($data['groups']) ? explode(',', $data['groups']) : array(),
+                false,
+                isset($data['created at']) ? new \DateTime($data['created at']) : null
+            );
+        }
+
+        $this->getEntityManager()->flush();
+    }
+
+    /**
      * @Given /^there are groups:$/
      * @Given /^there are following groups:$/
      * @Given /^the following groups exist:$/
@@ -192,11 +250,6 @@ class CoreContext extends DefaultContext
         foreach ($table->getHash() as $data) {
             $group = $repository->createNew();
             $group->setName(trim($data['name']));
-
-            $roles = explode(',', $data['roles']);
-            $roles = array_map('trim', $roles);
-
-            $group->setRoles($roles);
 
             $manager->persist($group);
         }
@@ -213,8 +266,10 @@ class CoreContext extends DefaultContext
 
         foreach ($table->getHash() as $data) {
             $address = $this->createAddress($data['address']);
-            $user = $this->thereIsUser($data['user'], 'sylius', null, 'yes', null, array(), false);
-            $user->addAddress($address);
+
+            $user = $this->thereIsUser($data['user'], 'sylius', 'ROLE_USER', 'yes', null, array());
+            $user->getCustomer()->addAddress($address);
+
             $manager->persist($address);
             $manager->persist($user);
         }
@@ -224,57 +279,36 @@ class CoreContext extends DefaultContext
 
     public function thereIsUser($email, $password, $role = null, $enabled = 'yes', $address = null, $groups = array(), $flush = true, array $authorizationRoles = array(), $createdAt = null)
     {
-        if (null === $user = $this->getRepository('user')->findOneBy(array('email' => $email))) {
-            $addressData = explode(',', $address);
-            $addressData = array_map('trim', $addressData);
+        if (null !== $user = $this->getRepository('user')->findOneByEmail($email)) {
+            return $user;
+        }
 
-            /* @var $user UserInterface */
-            $user = $this->getRepository('user')->createNew();
-            $user->setFirstname(null === $address ? $this->faker->firstName : $addressData[0]);
-            $user->setLastname(null === $address ? $this->faker->lastName : $addressData[1]);
-            $user->setEmail($email);
-            $user->setEnabled('yes' === $enabled);
-            $user->setCreatedAt(null === $createdAt ? new \DateTime() : $createdAt);
-            $user->setPlainPassword($password);
+        /* @var $user UserInterface */
+        $user = $this->createUser($email, $password, $role, $enabled, $address, $groups, $authorizationRoles, $createdAt);
 
-            if (null !== $address) {
-                $user->setShippingAddress($this->createAddress($address));
-            }
-
-            if (null !== $role) {
-                $user->addRole($role);
-            }
-
-            $this->getEntityManager()->persist($user);
-
-            foreach ($groups as $groupName) {
-                if ($group = $this->findOneByName('group', $groupName)) {
-                    $user->addGroup($group);
-                }
-            }
-
-            foreach ($authorizationRoles as $role) {
-                try {
-                    $authorizationRole = $this->findOneByName('role', $role);
-                } catch (\InvalidArgumentException $exception) {
-                    $authorizationRole = $this->getService('sylius.repository.role')->createNew();
-
-                    $authorizationRole->setCode($role);
-                    $authorizationRole->setName(ucfirst($role));
-                    $authorizationRole->setSecurityRoles(array('ROLE_ADMINISTRATION_ACCESS'));
-
-                    $this->getEntityManager()->persist($authorizationRole);
-                }
-
-                $user->addAuthorizationRole($authorizationRole);
-            }
-
-            if ($flush) {
-                $this->getEntityManager()->flush();
-            }
+        $this->getEntityManager()->persist($user);
+        if ($flush) {
+            $this->getEntityManager()->flush();
         }
 
         return $user;
+    }
+
+    protected function thereIsCustomer($email, $address = null, $groups = array(), $flush = true, $createdAt = null)
+    {
+        if (null !== $customer = $this->getRepository('customer')->findOneByEmail($email)) {
+            return $customer;
+        }
+
+        /* @var $customer CustomerInterface */
+        $customer = $this->createCustomer($email, $address, $groups, $createdAt);
+
+        $this->getEntityManager()->persist($customer);
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
+
+        return $customer;
     }
 
     /**
@@ -430,9 +464,24 @@ class CoreContext extends DefaultContext
         $repository = $this->getRepository('locale');
         $manager = $this->getEntityManager();
 
+        $locales = $repository->findAll();
+        foreach ($locales as $locale) {
+            $manager->remove($locale);
+        }
+
+        $manager->flush();
+        $manager->clear();
+
         foreach ($table->getHash() as $data) {
             $locale = $repository->createNew();
-            $locale->setCode($data['code']);
+
+            if (isset($data['code'])) {
+                $locale->setCode($data['code']);
+            } elseif (isset($data['name'])) {
+                $locale->setCode($this->getLocaleCodeByEnglishLocaleName($data['name']));
+            } else {
+                throw new \InvalidArgumentException("Locale definition should have either code or name");
+            }
 
             if (isset($data['enabled'])) {
                 $locale->setEnabled('yes' === $data['enabled']);
@@ -445,22 +494,53 @@ class CoreContext extends DefaultContext
     }
 
     /**
+     * @Given /^there are following locales configured and assigned to the default channel:$/
+     */
+    public function thereAreLocalesAssignedToDefaultChannel(TableNode $table)
+    {
+        $this->thereAreLocales($table);
+
+        /** @var ChannelInterface $defaultChannel */
+        $defaultChannel = $this->getRepository('channel')->findOneBy(array('code' => 'DEFAULT-WEB'));
+
+        /** @var LocaleInterface[] $locales */
+        $locales = $this->getRepository('locale')->findAll();
+        foreach ($locales as $locale) {
+            $defaultChannel->addLocale($locale);
+        }
+
+        $em = $this->getEntityManager();
+        //$em->persist($defaultChannel);
+        $em->flush();
+    }
+
+    /**
      * @Given /^product "([^""]*)" is available in all variations$/
      */
     public function productIsAvailableInAllVariations($productName)
     {
+        /** @var ProductInterface $product */
         $product = $this->findOneByName('product', $productName);
 
-        $this->getService('sylius.generator.product_variant')->generate($product);
+        $this->generateProductVariations($product);
 
-        /* @var $variant ProductVariantInterface */
-        foreach ($product->getVariants() as $variant) {
-            $variant->setPrice($product->getMasterVariant()->getPrice());
+        $this->getEntityManager()->flush();
+    }
+
+    /**
+     * @Given all products are available in all variations
+     */
+    public function allProductsAreAvailableInAllVariations()
+    {
+        /** @var ProductInterface[] $products */
+        $products = $this->getRepository('product')->findAll();
+        foreach ($products as $product) {
+            if ($product->hasOptions()) {
+                $this->generateProductVariations($product);
+            }
         }
 
-        $manager = $this->getEntityManager();
-        $manager->persist($product);
-        $manager->flush();
+        $this->getEntityManager()->flush();
     }
 
     /**
@@ -472,8 +552,7 @@ class CoreContext extends DefaultContext
      */
     private function createAddress($string)
     {
-        $addressData = explode(',', $string);
-        $addressData = array_map('trim', $addressData);
+        $addressData = $this->processAddress($string);
 
         list($firstname, $lastname) = explode(' ', $addressData[0]);
 
@@ -484,9 +563,24 @@ class CoreContext extends DefaultContext
         $address->setStreet($addressData[1]);
         $address->setPostcode($addressData[2]);
         $address->setCity($addressData[3]);
-        $address->setCountry($this->findOneByName('country', $addressData[4]));
+        $address->setCountry($this->findOneBy('country', array(
+            'isoName' => $this->getCountryCodeByEnglishCountryName($addressData[4])
+        )));
 
         return $address;
+    }
+
+    /**
+     * @param  string $address
+     *
+     * @return array
+     */
+    protected function processAddress($address)
+    {
+        $addressData = explode(',', $address);
+        $addressData = array_map('trim', $addressData);
+
+        return $addressData;
     }
 
     /**
@@ -545,11 +639,131 @@ class CoreContext extends DefaultContext
      */
     private function iAmLoggedInAsRole($role, $email = 'sylius@example.com', array $authorizationRoles = array())
     {
-        $this->thereIsUser($email, 'sylius', null, 'yes', null, array(), true, $authorizationRoles);
-        $this->getSession()->visit($this->generatePageUrl('fos_user_security_login'));
+        $this->thereIsUser($email, 'sylius', $role, 'yes', null, array(), true, $authorizationRoles);
+        $this->getSession()->visit($this->generatePageUrl('sylius_user_security_login'));
 
         $this->fillField('Email', $email);
         $this->fillField('Password', 'sylius');
-        $this->pressButton('login');
+        $this->pressButton('Login');
+    }
+
+    /**
+     * @param GroupableInterface $groupableObject
+     * @param array              $groups
+     */
+    protected function assignGroups(GroupableInterface $groupableObject, array $groups)
+    {
+        foreach ($groups as $groupName) {
+            if ($group = $this->findOneByName('group', $groupName)) {
+                $groupableObject->addGroup($group);
+            }
+        }
+    }
+
+    /**
+     * @param array         $authorizationRoles
+     * @param UserInterface $user
+     */
+    protected function assignAuthorizationRoles(UserInterface $user, array $authorizationRoles = array())
+    {
+        foreach ($authorizationRoles as $role) {
+            try {
+                $authorizationRole = $this->findOneByName('role', $role);
+            } catch (\InvalidArgumentException $exception) {
+                $authorizationRole = $this->createAuthorizationRole($role);
+                $this->getEntityManager()->persist($authorizationRole);
+            }
+
+            $user->addAuthorizationRole($authorizationRole);
+        }
+    }
+
+    /**
+     * @param $email
+     * @param $address
+     * @param $groups
+     * @param $createdAt
+     *
+     * @return CustomerInterface
+     */
+    protected function createCustomer($email, $address = null, $groups = array(), $createdAt = null)
+    {
+        $addressData = $this->processAddress($address);
+
+        $customer = $this->getRepository('customer')->createNew();
+        $customer->setFirstname(null === $address ? $this->faker->firstName : $addressData[0]);
+        $customer->setLastname(null === $address ? $this->faker->lastName : $addressData[1]);
+        $customer->setEmail($email);
+        $customer->setEmailCanonical($email);
+        $customer->setCreatedAt(null === $createdAt ? new \DateTime() : $createdAt);
+        if (null !== $address) {
+            $customer->setShippingAddress($this->createAddress($address));
+        }
+        $this->assignGroups($customer, $groups);
+
+        return $customer;
+    }
+
+    /**
+     * @param $email
+     * @param $password
+     * @param $role
+     * @param $enabled
+     * @param $address
+     * @param $groups
+     * @param array $authorizationRoles
+     * @param $createdAt
+     *
+     * @return UserInterface
+     */
+    protected function createUser($email, $password, $role = null, $enabled = 'yes', $address = null, array $groups = array(), array $authorizationRoles = array(), $createdAt = null)
+    {
+        $user = $this->getRepository('user')->createNew();
+        $customer = $this->createCustomer($email, $address, $groups, $createdAt);
+        $user->setCustomer($customer);
+        $user->setUsername($email);
+        $user->setEmail($email);
+        $user->setEnabled('yes' === $enabled);
+        $user->setCreatedAt(null === $createdAt ? new \DateTime() : $createdAt);
+        $user->setPlainPassword($password);
+        $user->setUsernameCanonical($email);
+        $user->setEmailCanonical($email);
+        $this->getService('sylius.user.password_updater')->updatePassword($user);
+
+        if (null !== $role) {
+            $user->addRole($role);
+        }
+        $this->assignAuthorizationRoles($user, $authorizationRoles);
+
+        return $user;
+    }
+
+    /**
+     * @param  string $role
+     *
+     * @return RoleInterface
+     */
+    protected function createAuthorizationRole($role)
+    {
+        $authorizationRole = $this->getRepository('role')->createNew();
+        $authorizationRole->setCode($role);
+        $authorizationRole->setName(ucfirst($role));
+        $authorizationRole->setSecurityRoles(array('ROLE_ADMINISTRATION_ACCESS'));
+
+        return $authorizationRole;
+    }
+
+    /**
+     * @param ProductInterface $product
+     */
+    private function generateProductVariations($product)
+    {
+        $this->getService('sylius.generator.product_variant')->generate($product);
+
+        foreach ($product->getVariants() as $variant) {
+            $variant->setPrice($product->getMasterVariant()->getPrice());
+        }
+
+        $this->getEntityManager()->persist($product);
     }
 }

@@ -15,7 +15,7 @@ use Sylius\Component\Report\DataFetcher\DataFetcherInterface;
 use Sylius\Component\Report\DataFetcher\Data;
 
 /**
- * Abstract class to provide time periods logic
+ * Abstract class to provide time periods logic.
  *
  * @author Łukasz Chruściel <lukasz.chrusciel@lakion.com>
  */
@@ -25,6 +25,9 @@ abstract class TimePeriod implements DataFetcherInterface
     const PERIOD_MONTH  = 'month';
     const PERIOD_YEAR   = 'year';
 
+    /**
+     * @return array
+     */
     public static function getPeriodChoices()
     {
         return array(
@@ -71,7 +74,7 @@ abstract class TimePeriod implements DataFetcherInterface
         $fetched = array();
 
         if ($configuration['empty_records']) {
-            $fetched = $this->fillEmptyRecodrs($fetched, $configuration);
+            $fetched = $this->fillEmptyRecords($fetched, $configuration);
         }
         foreach ($rawData as $row) {
             $date = new \DateTime($row[$labels[0]]);
@@ -84,29 +87,50 @@ abstract class TimePeriod implements DataFetcherInterface
     }
 
     /**
-     * Method responsible for providing raw data to fetch.
+     * Responsible for providing raw data to fetch, from the configuration (ie: start date, end date, time period,
+     * empty records flag, interval, period format, presentation format, group by).
      *
-     * @param Array configuration (start date, end date, time period, empty records flag, interval, period format, presentation format, group by)
+     * @param array $configuration
+     *
+     * @return array
      */
     abstract protected function getData(array $configuration = array());
 
-    private function setExtraConfiguration(array &$configuration, $interval, $periodFormat, $presentationFormat, $groupBy)
-    {
+    /**
+     * @param array  $configuration
+     * @param string $interval
+     * @param string $periodFormat
+     * @param string $presentationFormat
+     * @param array  $groupBy
+     */
+    private function setExtraConfiguration(
+        array &$configuration,
+        $interval,
+        $periodFormat,
+        $presentationFormat,
+        array $groupBy
+    ) {
         $configuration['interval'] = $interval;
         $configuration['periodFormat'] = $periodFormat;
         $configuration['presentationFormat'] = $presentationFormat;
         $configuration['groupBy'] = $groupBy;
     }
 
-    private function fillEmptyRecodrs(array $fetched, array $configuration)
+    /**
+     * @param array $fetched
+     * @param array $configuration
+     *
+     * @return array
+     */
+    private function fillEmptyRecords(array $fetched, array $configuration)
     {
         $date = $configuration['start'];
         $dateInterval = new \DateInterval($configuration['interval']);
 
         $numberOfPeriods = $configuration['start']->diff($configuration['end']);
-        $formatednumberOfPeriods = $numberOfPeriods->format($configuration['periodFormat']);
+        $formattedNumberOfPeriods = $numberOfPeriods->format($configuration['periodFormat']);
 
-        for ($i = 0; $i <= $formatednumberOfPeriods; $i++) {
+        for ($i = 0; $i <= $formattedNumberOfPeriods; $i++) {
             $fetched[$date->format($configuration['presentationFormat'])] = 0;
             $date = $date->add($dateInterval);
         }

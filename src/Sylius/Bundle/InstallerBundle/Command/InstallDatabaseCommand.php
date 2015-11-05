@@ -77,8 +77,6 @@ EOT
                     $commands['doctrine:schema:drop'] = array('--force' => true);
                     $commands[] = 'doctrine:schema:create';
                 }
-            } else {
-                $commands[] = 'doctrine:schema:create';
             }
         }
 
@@ -86,6 +84,11 @@ EOT
         $commands[] = 'doctrine:phpcr:repository:init';
         $commands[] = 'sylius:search:index';
         $commands[] = 'sylius:rbac:initialize';
+        $commands['doctrine:migrations:version'] = array(
+            '--add' => true,
+            '--all' => true,
+            '--no-interaction' => true,
+        );
 
         $this->runCommands($commands, $input, $output);
 
@@ -97,7 +100,7 @@ EOT
      *
      * @throws \Exception
      */
-    private function isDatabasePresent()
+    protected function isDatabasePresent()
     {
         $databaseName = $this->getDatabaseName();
 
@@ -122,7 +125,7 @@ EOT
     /**
      * @return bool
      */
-    private function isSchemaPresent()
+    protected function isSchemaPresent()
     {
         $schemaManager = $this->getSchemaManager();
 
@@ -132,7 +135,7 @@ EOT
     /**
      * @return string
      */
-    private function getDatabaseName()
+    protected function getDatabaseName()
     {
         $databaseName = $this->getContainer()->getParameter('sylius.database.name');
 
@@ -146,7 +149,7 @@ EOT
     /**
      * @return AbstractSchemaManager
      */
-    private function getSchemaManager()
+    protected function getSchemaManager()
     {
         return $this->get('doctrine')->getManager()->getConnection()->getSchemaManager();
     }
