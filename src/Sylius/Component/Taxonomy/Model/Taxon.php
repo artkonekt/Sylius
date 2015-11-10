@@ -365,14 +365,6 @@ class Taxon extends AbstractTranslatable implements TaxonInterface
     }
 
     /**
-     * {@inheritdoc}
-     */
-    protected function getTranslationClass()
-    {
-        return get_class().'Translation';
-    }
-
-    /**
      * @return int
      */
     public function getPriority()
