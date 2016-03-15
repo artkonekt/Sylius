@@ -27,8 +27,10 @@
             <gedmo:versioned />
         </field>
 
-        <field name="tracking" column="tracking" type="string" nullable="true" />
-
+        <field name="tracking" column="tracking" type="string" nullable="true">
+            <gedmo:versioned />
+        </field>
+        
         <one-to-many field="items" target-entity="Sylius\Component\Shipping\Model\ShipmentItemInterface" mapped-by="shipment" orphan-removal="false">
             <cascade>
                 <cascade-persist/>
